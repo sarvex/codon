@@ -8,16 +8,11 @@ from setuptools.command.build_ext import build_ext
 
 
 codon_path = os.environ.get("CODON_DIR")
-if not codon_path:
-    c = shutil.which("codon")
-    if c:
-        codon_path = Path(c).parent / ".."
-else:
+if codon_path:
     codon_path = Path(codon_path)
-for path in [
-    os.path.expanduser("~") + "/.codon",
-    os.getcwd() + "/..",
-]:
+elif c := shutil.which("codon"):
+    codon_path = Path(c).parent / ".."
+for path in [os.path.expanduser("~") + "/.codon", f"{os.getcwd()}/.."]:
     path = Path(path)
     if not codon_path and path.exists():
         codon_path = path
@@ -36,7 +31,7 @@ if (
     )
     sys.exit(1)
 codon_path = codon_path.resolve()
-print("Codon: " + str(codon_path))
+print(f"Codon: {str(codon_path)}")
 
 
 class CodonExtension(Extension):
@@ -63,20 +58,30 @@ class BuildCodonExt(build_ext):
         os.makedirs(extension_path.parent.absolute(), exist_ok=True)
 
         optimization = '-debug' if self.debug else '-release'
-        self.spawn([
-            str(codon_path / "bin" / "codon"), 'build', optimization, "--relocation-model=pic",
-            '-pyext', '-o', str(extension_path) + ".o", '-module', ext.name, ext.source])
+        self.spawn(
+            [
+                str(codon_path / "bin" / "codon"),
+                'build',
+                optimization,
+                "--relocation-model=pic",
+                '-pyext',
+                '-o',
+                f"{str(extension_path)}.o",
+                '-module',
+                ext.name,
+                ext.source,
+            ]
+        )
 
         print('-->', extension_path)
         ext.runtime_library_dirs = [str(codon_path / "lib" / "codon")]
         self.compiler.link_shared_object(
-            [str(extension_path) + ".o"],
+            [f"{str(extension_path)}.o"],
             str(extension_path),
             libraries=["codonrt"],
             library_dirs=ext.runtime_library_dirs,
             runtime_library_dirs=ext.runtime_library_dirs,
             extra_preargs=['-Wl,-rpath,@loader_path'],
-            # export_symbols=self.get_export_symbols(ext),
             debug=self.debug,
             build_temp=self.build_temp,
         )

@@ -228,7 +228,7 @@ def test_codon_extensions(m):
 
     assert equal(x + y, 103.14, 1004.2, '(x+y)')
     try:
-        x + 'x'
+        f'{x}x'
     except:
         pass
     else:
@@ -257,7 +257,7 @@ def test_codon_extensions(m):
     assert y @ r == 4300
 
     def dup(v):
-        return m.Vec(v.a, v.b, v.tag + '1')
+        return m.Vec(v.a, v.b, f'{v.tag}1')
 
     y1 = dup(y)
     y1 += x
